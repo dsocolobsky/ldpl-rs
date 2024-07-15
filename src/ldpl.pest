@@ -1,0 +1,18 @@
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+
+scalar_type    = { "number" | "text" }
+container_type = { "list" | "map" }
+data_type      = { scalar_type | container_type }
+
+number = { ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)* }
+string = { "\"" ~ ASCII_ALPHANUMERIC* ~ "\"" }
+value  = { number | string }
+
+identifier           = @{ ASCII_ALPHA ~ (ASCII_ALPHA | ASCII_DIGIT)* }
+variable_declaration = @{ identifier ~ " is " ~ data_type }
+store                = @{ "store " ~ value ~ " in " ~ identifier }
+display              = @{ "display " ~ (identifier)+ }
+
+expression = { display | store | variable_declaration }
+
+file = { SOI ~ (expression)+ ~ EOI }
