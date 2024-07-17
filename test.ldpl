@@ -1,4 +1,4 @@
-myIdent is number
-store 42 in myIdent
-store 129 in myIdent
-display myIdent
+myVar is number
+store 52 in myVar
+store 12 in myVar
+display myVar
