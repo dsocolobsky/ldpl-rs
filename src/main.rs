@@ -29,32 +29,35 @@ fn main() {
     println!("The current directory is {}", path.display());
     let unparsed_file =
         fs::read_to_string("test.ldpl").expect("Should have been able to read the file");
-    let file = LDPLParser::parse(Rule::file, &unparsed_file)
-        .expect("unsuccessful parse") // unwrap the parse result
-        .next()
-        .unwrap(); // get and unwrap the `file` rule; never fails
-    for expression in file.into_inner() {
+    let expressions = LDPLParser::parse(Rule::file, &unparsed_file)
+        .expect("unsuccessful parse");
+    for expression in expressions {
         match expression.as_rule() {
             Rule::display => {
-                let mut inner_rules = expression.into_inner();
-                let display_text = inner_rules.next().unwrap();
-                match display_text.as_rule() {
-                    Rule::string => {
-                        println!("{}", display_text.as_str());
-                    }
-                    Rule::identifier => {
-                        let variable_name = display_text.as_str();
-                        let variable_value = variable_values.get(variable_name).expect("Variable not found");
-                        match variable_value {
-                            VariableValue::Number(value) => {
-                                println!("{}", value);
+                for print_rule in expression.into_inner() {
+                    match print_rule.as_rule() {
+                        Rule::string => {
+                            print!("{}", print_rule.as_str());
+                        }
+                        Rule::identifier => {
+                            let variable_name = print_rule.as_str();
+                            if variable_name == "clrf" {
+                                print!("\n");
+                                continue;
                             }
-                            VariableValue::Text(value) => {
-                                println!("{}", value);
+                            let variable_value = variable_values.get(variable_name).
+                                expect(&format!("variable {} not found", variable_name));
+                            match variable_value {
+                                VariableValue::Number(value) => {
+                                    print!("{}", value);
+                                }
+                                VariableValue::Text(value) => {
+                                    print!("{}", value);
+                                }
                             }
                         }
+                        _ => panic!("Unknown display type"),
                     }
-                    _ => panic!("Unknown display type"),
                 }
             }
             Rule::store => {
@@ -80,9 +83,10 @@ fn main() {
                 variable_types.insert(variable_name, variable_type);
             },
             Rule::EOI => {
-                println!("End of input");
             }
-            _ => unreachable!(),
+            _ => panic!(
+                "Unknown expression type: {:?}", expression.as_rule(),
+            ),
         }
     }
 }

@@ -1,4 +1,4 @@
-myVar is number
-store 52 in myVar
-store 12 in myVar
-display myVar
+myAge is number
+store 15 in myAge
+display "my age is " myAge clrf
+display "some other thing"
