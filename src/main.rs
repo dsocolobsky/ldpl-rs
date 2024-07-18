@@ -20,6 +20,34 @@ enum VariableValue {
     Text(String),
 }
 
+fn handle_display(display_pair: pest::iterators::Pair<Rule>, variable_values: &HashMap<&str, VariableValue>) {
+    for display_pair in display_pair.into_inner() {
+        match display_pair.as_rule() {
+            Rule::string => {
+                print!("{}", display_pair.as_str());
+            }
+            Rule::identifier => {
+                let variable_name = display_pair.as_str();
+                if variable_name == "clrf" {
+                    print!("\n");
+                    continue;
+                }
+                let variable_value = variable_values.get(variable_name).
+                    expect(&format!("variable {} not found", variable_name));
+                match variable_value {
+                    VariableValue::Number(value) => {
+                        print!("{}", value);
+                    }
+                    VariableValue::Text(value) => {
+                        print!("{}", value);
+                    }
+                }
+            }
+            _ => panic!("Unknown display type"),
+        }
+    }
+}
+
 fn main() {
     // map from variable name to type
     let mut variable_types: HashMap<&str, VariableType> = HashMap::new();
@@ -34,32 +62,8 @@ fn main() {
     for expression in expressions {
         match expression.as_rule() {
             Rule::display => {
-                for print_rule in expression.into_inner() {
-                    match print_rule.as_rule() {
-                        Rule::string => {
-                            print!("{}", print_rule.as_str());
-                        }
-                        Rule::identifier => {
-                            let variable_name = print_rule.as_str();
-                            if variable_name == "clrf" {
-                                print!("\n");
-                                continue;
-                            }
-                            let variable_value = variable_values.get(variable_name).
-                                expect(&format!("variable {} not found", variable_name));
-                            match variable_value {
-                                VariableValue::Number(value) => {
-                                    print!("{}", value);
-                                }
-                                VariableValue::Text(value) => {
-                                    print!("{}", value);
-                                }
-                            }
-                        }
-                        _ => panic!("Unknown display type"),
-                    }
-                }
-            }
+                handle_display(expression, &variable_values);
+            },
             Rule::store => {
                 let mut inner_rules = expression.into_inner();
                 let variable_value = inner_rules.next().unwrap();
