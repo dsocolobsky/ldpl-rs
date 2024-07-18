@@ -1,4 +1,3 @@
 store 15 in myAge
-if myAge is equal to 15 then
-    display "sos mayor"
- end if
+display myAge
+
