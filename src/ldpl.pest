@@ -15,6 +15,21 @@ variable_declaration = { identifier ~ "is" ~ data_type }
 store                = { "store" ~ value ~ "in" ~ identifier }
 display              = { "display " ~ (identifier | string_quoted)+ }
 
-expression = _{ display | store | variable_declaration }
+comparison_op = {
+    "is equal to" | "is not equal to" | "is less than" | "is greater than"  |
+    "is less than or equal to" | "is greater than or equal to"
+}
+comparison_exp = _{ string_quoted | number | identifier }
+comparison = { comparison_exp ~ comparison_op ~ comparison_exp }
+
+if_guard = {comparison }
+if_block = { (expression ~ NEWLINE)* }
+if_statement = {
+    "if" ~ if_guard ~ "then" ~ NEWLINE ~
+    if_block ~
+    "end if"
+}
+
+expression = _{ display | store | variable_declaration | if_statement }
 
 file = _{ SOI ~ NEWLINE* ~ (expression ~ NEWLINE+)* ~ expression? ~ EOI }

@@ -3,6 +3,7 @@ use pest::Parser;
 use pest_derive::Parser;
 use std::env;
 use std::fs;
+use pest::iterators::Pair;
 
 #[derive(Parser)]
 #[grammar = "ldpl.pest"]
@@ -48,6 +49,76 @@ fn handle_display(display_pair: pest::iterators::Pair<Rule>, variable_values: &H
     }
 }
 
+fn handle_comparison(comparison: pest::iterators::Pair<Rule>, variable_values: &HashMap<&str, VariableValue>) -> bool {
+    let mut inner_rules = comparison.into_inner();
+    let left = inner_rules.next().unwrap();
+    let op = inner_rules.next().unwrap();
+    let right = inner_rules.next().unwrap();
+
+    let left_val = handle_value(variable_values, left);
+    let right_val = handle_value(variable_values, right);
+
+    match op.as_str() {
+        "is equal to" => {
+            match (left_val, right_val) {
+                (VariableValue::Number(left), VariableValue::Number(right)) => left == right,
+                _ => panic!("Cannot compare different types"),
+            }
+        },
+        "is not equal to" => {
+            match (left_val, right_val) {
+                (VariableValue::Number(left), VariableValue::Number(right)) => left != right,
+                _ => panic!("Cannot compare different types"),
+            }
+        },
+        "is greater than" => {
+            match (left_val, right_val) {
+                (VariableValue::Number(left), VariableValue::Number(right)) => left > right,
+                _ => panic!("Cannot compare different types"),
+            }
+        },
+        "is less than" => {
+            match (left_val, right_val) {
+                (VariableValue::Number(left), VariableValue::Number(right)) => left < right,
+                _ => panic!("Cannot compare different types"),
+            }
+        },
+        "is greater than or equal to" => {
+            match (left_val, right_val) {
+                (VariableValue::Number(left), VariableValue::Number(right)) => left >= right,
+                _ => panic!("Cannot compare different types"),
+            }
+        },
+        "is less than or equal to" => {
+            match (left_val, right_val) {
+                (VariableValue::Number(left), VariableValue::Number(right)) => left <= right,
+                _ => panic!("Cannot compare different types"),
+            }
+        },
+        _ => panic!("Unhandled comparison for now"),
+    }
+}
+
+fn handle_value(variable_values: &HashMap<&str, VariableValue>, pair: Pair<Rule>) -> VariableValue {
+    match pair.as_rule() {
+        Rule::number => VariableValue::Number(pair.as_str().parse().unwrap()),
+        Rule::string => VariableValue::Text(pair.as_str().to_string()),
+        Rule::identifier => {
+            let variable_name = pair.as_str();
+            let variable_value = variable_values.get(variable_name).
+                expect(&format!("variable {} not found", variable_name));
+            variable_value.clone()
+        }
+        _ => panic!("Unknown variable type"),
+    }
+}
+
+fn handle_if_guard(if_guard: pest::iterators::Pair<Rule>, variable_values: &HashMap<&str, VariableValue>) -> bool {
+    let mut inner_rules = if_guard.into_inner();
+    let comparison_rules = inner_rules.next().unwrap();
+    handle_comparison(comparison_rules, variable_values)
+}
+
 fn main() {
     // map from variable name to type
     let mut variable_types: HashMap<&str, VariableType> = HashMap::new();
@@ -64,6 +135,13 @@ fn main() {
             Rule::display => {
                 handle_display(expression, &variable_values);
             },
+            Rule::if_statement => {
+                let mut inner_rules = expression.into_inner();
+                let if_guard = inner_rules.next().unwrap();
+                let if_block = inner_rules.next().unwrap();
+                let guard_result = handle_if_guard(if_guard, &variable_values);
+                println!("{:?}", guard_result);
+            }
             Rule::store => {
                 let mut inner_rules = expression.into_inner();
                 let variable_value = inner_rules.next().unwrap();

@@ -1,4 +1,4 @@
-myAge is number
 store 15 in myAge
-display "my age is " myAge clrf
-display "some other thing"
+if myAge is equal to 15 then
+    display "sos mayor"
+ end if
