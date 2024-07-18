@@ -125,6 +125,12 @@ impl<'a> Interpreter<'a> {
         }
     }
 
+    fn handle_block(&mut self, block: Pair<'a, Rule>) {
+        for pair in block.into_inner() {
+            self.handle_pair(pair);
+        }
+    }
+
     fn handle_pair(
         &mut self,
         pair: Pair<'a, Rule>
@@ -141,7 +147,7 @@ impl<'a> Interpreter<'a> {
                     return;
                 }
                 let if_block = inner_rules.next().unwrap();
-                self.handle_pair(if_block);
+                self.handle_block(if_block);
             }
             Rule::store => {
                 let mut inner_rules = pair.into_inner().clone();

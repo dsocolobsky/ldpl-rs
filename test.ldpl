@@ -1,3 +1,5 @@
-store 15 in myAge
-display myAge
-
+store 18 in myAge
+if myAge is greater than or equal to 18 then
+    display "sos mayor" clrf
+    display "other"
+ end if

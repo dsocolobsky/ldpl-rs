@@ -16,8 +16,8 @@ store                = { "store" ~ value ~ "in" ~ identifier }
 display              = { "display " ~ (identifier | string_quoted)+ }
 
 comparison_op = {
-    "is equal to" | "is not equal to" | "is less than" | "is greater than"  |
-    "is less than or equal to" | "is greater than or equal to"
+    "is less than or equal to" | "is greater than or equal to" |
+    "is equal to" | "is not equal to" | "is less than" | "is greater than"
 }
 comparison_exp = _{ string_quoted | number | identifier }
 comparison = { comparison_exp ~ comparison_op ~ comparison_exp }
