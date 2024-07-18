@@ -1,4 +1,5 @@
 WHITESPACE = _{ " " | "\t" }
+COMMENT   = _{"#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
 
 scalar_type    = { "number" | "text" }
 container_type = { "list" | "map" }
