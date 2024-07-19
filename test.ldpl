@@ -1,6 +1,6 @@
-store 2 in myAge
-while myAge is less than 18 do
-    display "You are not an adult" clrf
-    store 18 in myAge
+i is number
+store 0 in i
+while i is less than or equal to 10 do
+    display "i " i clrf
+    in i solve i + 1
 repeat
-display "You are now an adult you have " myAge clrf

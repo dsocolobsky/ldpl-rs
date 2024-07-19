@@ -1,9 +1,44 @@
-use pest::iterators::Pair;
+use pest::iterators::{Pair, Pairs};
 use pest_derive::Parser;
 use std::collections::HashMap;
 use std::env;
 use std::fs;
 use pest::Parser;
+use pest::pratt_parser::PrattParser;
+
+
+
+#[derive(Debug)]
+pub enum MathExpr {
+    Integer(f32),
+    UnaryMinus(Box<MathExpr>),
+    BinOp {
+        lhs: Box<MathExpr>,
+        op: MathOp,
+        rhs: Box<MathExpr>,
+    },
+}
+
+#[derive(Debug)]
+pub enum MathOp {
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+}
+
+lazy_static::lazy_static! {
+    static ref PRATT_PARSER: PrattParser<Rule> = {
+        use pest::pratt_parser::{Assoc::*, Op};
+        // Precedence is defined lowest to highest
+        // | indicates equal precedence
+        PrattParser::new()
+            .op(Op::infix(Rule::add, Left) | Op::infix(Rule::sub, Left))
+            .op(Op::infix(Rule::mul, Left) | Op::infix(Rule::div, Left))
+    };
+}
+
+
 
 #[derive(Parser)]
 #[grammar = "ldpl.pest"]
@@ -178,6 +213,96 @@ impl<'a> Interpreter<'a> {
         }
     }
 
+    fn parse_math_expr(&mut self, pairs: Pairs<Rule>) -> MathExpr {
+        PRATT_PARSER
+            .map_primary(|primary| match primary.as_rule() {
+                Rule::number => MathExpr::Integer(primary.as_str().parse::<f32>().unwrap()),
+                Rule::identifier => {
+                    let variable_name = primary.as_str();
+                    let variable_value = self.variable_values
+                        .get(variable_name)
+                        .expect(&format!("variable {} not found", variable_name));
+                    match variable_value {
+                        VariableValue::Number(value) => MathExpr::Integer(*value),
+                        VariableValue::Text(_) => panic!("Cannot perform math operations on text"),
+                    }
+                }
+                Rule::math_expression => self.parse_math_expr(primary.into_inner()),
+                other => unreachable!("Expr::parse expected math_atom, found {:?}", other)
+            })
+            .map_infix(|lhs, op, rhs| {
+                let op = match op.as_rule() {
+                    Rule::add => MathOp::Add,
+                    Rule::sub => MathOp::Subtract,
+                    Rule::mul => MathOp::Multiply,
+                    Rule::div => MathOp::Divide,
+                    other => unreachable!("Expr::parse expected infix operation, found {:?}", other),
+                };
+                MathExpr::BinOp {
+                    lhs: Box::new(lhs),
+                    op,
+                    rhs: Box::new(rhs),
+                }
+            })
+            .map_prefix(|op, rhs| {
+                match op.as_rule() {
+                    Rule::unary_minus => MathExpr::UnaryMinus(Box::new(rhs)),
+                    other => unreachable!("Expr::parse expected prefix operation, found {:?}", other),
+                }
+            })
+            .parse(pairs)
+    }
+
+    fn interpret_math_expr(&mut self, expr: MathExpr) -> VariableValue {
+        match expr {
+            MathExpr::Integer(value) => VariableValue::Number(value as f32),
+            MathExpr::UnaryMinus(expr) => {
+                let value = match self.interpret_math_expr(*expr) {
+                    VariableValue::Number(val) => val,
+                    VariableValue::Text(_) => panic!("Cannot perform math operations on text"),
+                };
+                VariableValue::Number(-value)
+            }
+            MathExpr::BinOp { lhs, op, rhs } => {
+                let left_val = match self.interpret_math_expr(*lhs) {
+                    VariableValue::Number(val) => val,
+                    VariableValue::Text(_) => panic!("Cannot perform math operations on text"),
+                };
+                let right_val = match self.interpret_math_expr(*rhs) {
+                    VariableValue::Number(val) => val,
+                    VariableValue::Text(_) => panic!("Cannot perform math operations on text"),
+                };
+                let result = match op {
+                    MathOp::Add => left_val + right_val,
+                    MathOp::Subtract => left_val - right_val,
+                    MathOp::Multiply => left_val * right_val,
+                    MathOp::Divide => left_val / right_val,
+                };
+                VariableValue::Number(result)
+            }
+        }
+    }
+
+    fn handle_math_expr(&mut self, math_expr: Pair<'a, Rule>) -> VariableValue {
+        let math_expr_ast = self.parse_math_expr(math_expr.into_inner());
+        self.interpret_math_expr(math_expr_ast)
+    }
+
+    fn handle_solve(&mut self, solve: Pair<'a, Rule>) {
+        let mut inner_rules = solve.into_inner();
+        let identifier = inner_rules.next().unwrap();
+        match identifier.as_rule() {
+            Rule::identifier => {
+                let variable_name = identifier.as_str();
+                assert!(self.variable_types.contains_key(variable_name), "Variable {} not declared", variable_name);
+                let math_expr = inner_rules.next().unwrap();
+                let result = self.handle_math_expr(math_expr);
+                self.variable_values.insert(variable_name, result);
+            }
+            _ => panic!("Expected identifier"),
+        }
+    }
+
     fn handle_pair(
         &mut self,
         pair: Pair<'a, Rule>,
@@ -191,6 +316,9 @@ impl<'a> Interpreter<'a> {
             }
             Rule::while_statement => {
                 self.handle_while_statement(pair);
+            }
+            Rule::solve => {
+                self.handle_solve(pair);
             }
             Rule::store => {
                 let mut inner_rules = pair.into_inner().clone();

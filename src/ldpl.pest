@@ -46,6 +46,20 @@ while_statement = {
     "repeat"
 }
 
-expression = _{ display | store | variable_declaration | if_statement | while_statement }
+unary_minus = { "-" }
+math_primary = _{ number | identifier | ("(" ~ math_expression ~ ")") }
+math_atom = _{ unary_minus? ~ math_primary }
+binary_op = _{ add | sub | mul | div }
+    add = { "+" }
+    sub = { "-" }
+    mul = { "*" }
+    div = { "/" }
+math_expression = { math_atom ~ (binary_op ~ math_atom)* }
+
+solve = {
+    "in" ~ identifier ~ "solve" ~ math_expression
+}
+
+expression = _{ display | store | variable_declaration | if_statement | while_statement | solve }
 
 file = _{ SOI ~ NEWLINE* ~ (expression ~ NEWLINE+)* ~ expression? ~ EOI }
