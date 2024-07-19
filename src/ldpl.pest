@@ -40,6 +40,12 @@ if_statement = {
     "end if"
 }
 
-expression = _{ display | store | variable_declaration | if_statement }
+while_statement = {
+    "while" ~ guard ~ "do" ~ NEWLINE ~
+    block ~
+    "repeat"
+}
+
+expression = _{ display | store | variable_declaration | if_statement | while_statement }
 
 file = _{ SOI ~ NEWLINE* ~ (expression ~ NEWLINE+)* ~ expression? ~ EOI }

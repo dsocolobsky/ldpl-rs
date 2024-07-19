@@ -166,6 +166,18 @@ impl<'a> Interpreter<'a> {
         }
     }
 
+    fn handle_while_statement(&mut self, while_statement: Pair<'a, Rule>) {
+        let mut inner_rules = while_statement.into_inner();
+        let guard = inner_rules.next().unwrap();
+        if !self.handle_guard(guard.clone()) {
+            return;
+        }
+        let block = inner_rules.next().unwrap();
+        while self.handle_guard(guard.clone()) {
+            self.handle_block(block.clone());
+        }
+    }
+
     fn handle_pair(
         &mut self,
         pair: Pair<'a, Rule>,
@@ -176,6 +188,9 @@ impl<'a> Interpreter<'a> {
             }
             Rule::if_statement => {
                 self.handle_if_statement(pair);
+            }
+            Rule::while_statement => {
+                self.handle_while_statement(pair);
             }
             Rule::store => {
                 let mut inner_rules = pair.into_inner().clone();

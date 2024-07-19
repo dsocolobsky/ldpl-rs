@@ -1,8 +1,6 @@
 store 2 in myAge
-if myAge is equal to 18 then
-    display "dieciocho" clrf
-else if myAge is less than 18 then
-    display "menor que dieciocho" clrf
-else
-    display "mayor que dieciocho" clrf
-end if
+while myAge is less than 18 do
+    display "You are not an adult" clrf
+    store 18 in myAge
+repeat
+display "You are now an adult you have " myAge clrf
