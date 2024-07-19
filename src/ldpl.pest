@@ -22,11 +22,21 @@ comparison_op = {
 comparison_exp = _{ string_quoted | number | identifier }
 comparison = { comparison_exp ~ comparison_op ~ comparison_exp }
 
-if_guard = {comparison }
-if_block = { (expression ~ NEWLINE)* }
+guard = {comparison }
+block = { (expression ~ NEWLINE)* }
+else_if_statement = {
+    "else if" ~ guard ~ "then" ~ NEWLINE ~
+    block
+}
+else_statement = {
+    "else" ~ NEWLINE ~
+    block
+}
 if_statement = {
-    "if" ~ if_guard ~ "then" ~ NEWLINE ~
-    if_block ~
+    "if" ~ guard ~ "then" ~ NEWLINE ~
+    block ~
+    (else_if_statement)* ~
+    (else_statement)? ~
     "end if"
 }
 

@@ -51,7 +51,7 @@ impl<'a> Interpreter<'a> {
 
     fn handle_comparison(
         &self,
-        comparison: Pair<Rule>
+        comparison: Pair<Rule>,
     ) -> bool {
         let mut inner_rules = comparison.into_inner();
         let left = inner_rules.next().unwrap();
@@ -90,8 +90,8 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    fn handle_if_guard(&mut self, if_guard: Pair<Rule>) -> bool {
-        let mut inner_rules = if_guard.into_inner();
+    fn handle_guard(&mut self, guard: Pair<Rule>) -> bool {
+        let mut inner_rules = guard.into_inner();
         let comparison_rules = inner_rules.next().unwrap();
         self.handle_comparison(comparison_rules)
     }
@@ -131,23 +131,51 @@ impl<'a> Interpreter<'a> {
         }
     }
 
+    fn handle_if_statement(&mut self, if_statement: Pair<'a, Rule>) {
+        let mut inner_rules = if_statement.into_inner();
+        let guard = inner_rules.next().unwrap();
+        let guard_result = self.handle_guard(guard);
+        if guard_result {
+            let if_block = inner_rules.next().unwrap();
+            self.handle_block(if_block);
+            return;
+        }
+        // Discard the positive if branch
+        let _ = inner_rules.next();
+        // Loop over each else-if/else
+        while let Some(pair) = inner_rules.next() {
+            match pair.as_rule() {
+                Rule::else_if_statement => {
+                    let mut inner_rules = pair.into_inner();
+                    let else_guard = inner_rules.next().unwrap();
+                    let guard_result = self.handle_guard(else_guard);
+                    if guard_result {
+                        let else_if_block = inner_rules.next().unwrap();
+                        self.handle_block(else_if_block);
+                        break;
+                    }
+                }
+                Rule::else_statement => {
+                    let mut else_inner = pair.into_inner();
+                    let else_block = else_inner.next().unwrap();
+                    self.handle_block(else_block);
+                    break;
+                }
+                _ => panic!("Unknown expression type: {:?}", pair.as_rule(), ),
+            }
+        }
+    }
+
     fn handle_pair(
         &mut self,
-        pair: Pair<'a, Rule>
+        pair: Pair<'a, Rule>,
     ) {
         match pair.as_rule() {
             Rule::display => {
                 self.handle_display(pair);
             }
             Rule::if_statement => {
-                let mut inner_rules = pair.into_inner();
-                let if_guard = inner_rules.next().unwrap();
-                let guard_result = self.handle_if_guard(if_guard);
-                if !guard_result {
-                    return;
-                }
-                let if_block = inner_rules.next().unwrap();
-                self.handle_block(if_block);
+                self.handle_if_statement(pair);
             }
             Rule::store => {
                 let mut inner_rules = pair.into_inner().clone();
@@ -172,7 +200,7 @@ impl<'a> Interpreter<'a> {
                 self.variable_types.insert(variable_name, variable_type);
             }
             Rule::EOI => {}
-            _ => panic!("Unknown expression type: {:?}", pair.as_rule(),),
+            _ => panic!("Unknown expression type: {:?}", pair.as_rule(), ),
         }
     }
 }

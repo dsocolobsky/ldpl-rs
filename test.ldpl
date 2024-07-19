@@ -1,5 +1,8 @@
-store 18 in myAge
-if myAge is greater than or equal to 18 then
-    display "sos mayor" clrf
-    display "other"
- end if
+store 2 in myAge
+if myAge is equal to 18 then
+    display "dieciocho" clrf
+else if myAge is less than 18 then
+    display "menor que dieciocho" clrf
+else
+    display "mayor que dieciocho" clrf
+end if
