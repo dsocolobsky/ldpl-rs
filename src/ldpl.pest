@@ -15,10 +15,13 @@ variable_declaration = { identifier ~ "is" ~ data_type }
 store                = { "store" ~ value ~ "in" ~ identifier }
 display              = { "display " ~ (identifier | string_quoted)+ }
 
-comparison_op = {
-    "is less than or equal to" | "is greater than or equal to" |
-    "is equal to" | "is not equal to" | "is less than" | "is greater than"
-}
+comparison_op = _{ clte | cgte | ceq | cneq | clt | cgt }
+    clte = { "is less than or equal to" }
+    cgte = { "is greater than or equal to" }
+    ceq = { "is equal to" }
+    cneq = { "is not equal to" }
+    clt = { "is less than" }
+    cgt = { "is greater than" }
 comparison_exp = _{ string_quoted | number | identifier }
 comparison = { comparison_exp ~ comparison_op ~ comparison_exp }
 

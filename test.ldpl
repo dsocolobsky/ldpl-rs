@@ -1,6 +1,6 @@
-i is number
-store 0 in i
-while i is less than or equal to 10 do
-    display "i " i clrf
-    in i solve i + 1
+myNumber is number
+store 0 in myNumber
+while myNumber is less than 10 do
+    display "Loop number " myNumber crlf
+    in myNumber solve myNumber + 1
 repeat
